@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Binaural Beats Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-2xl mx-auto p-6 bg-gray-100 rounded-lg shadow-md my-10">
+    <h1 class="text-2xl font-bold text-center mb-6">Binaural Beats Generator</h1>
+    
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+      <h2 class="text-lg font-semibold mb-2">Brain Wave Presets</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4" id="presets-container">
+        <!-- Preset buttons will be added here -->
+      </div>
+      <p class="text-sm text-gray-600 italic" id="preset-description"></p>
+    </div>
+    
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Base Frequency: <span id="base-freq-value">200</span> Hz
+        </label>
+        <input
+          type="range"
+          min="100"
+          max="500"
+          value="200"
+          id="base-frequency"
+          class="w-full"
+        />
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Beat Frequency: <span id="beat-freq-value">10</span> Hz
+        </label>
+        <input
+          type="range"
+          min="0.5"
+          max="50"
+          step="0.5"
+          value="10"
+          id="beat-frequency"
+          class="w-full"
+        />
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Volume
+        </label>
+        <input
+          type="range"
+          min="-30"
+          max="0"
+          value="-10"
+          id="volume-control"
+          class="w-full"
+        />
+      </div>
+    </div>
+    
+    <div class="text-center">
+      <p class="mb-2 text-sm text-gray-600" id="current-freq-display">
+        Currently generating: Left ear (200 Hz) + Right ear (210 Hz) = 10 Hz binaural beat
+      </p>
+      <button
+        id="play-button"
+        class="px-6 py-3 rounded-full font-semibold text-white bg-green-500 hover:bg-green-600"
+      >
+        Play
+      </button>
+    </div>
+    
+    <div class="mt-6 text-sm text-gray-600">
+      <p class="font-semibold">Important notes:</p>
+      <ul class="list-disc pl-5 space-y-1 mt-2">
+        <li>Headphones are required for binaural beats to work properly</li>
+        <li>Start with shorter sessions (5-15 minutes) and lower volumes</li>
+        <li>If you experience any discomfort, stop immediately</li>
+        <li>Binaural beats may not be suitable for people with seizure disorders</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // App state
+    let isPlaying = false;
+    let baseFrequency = 200;
+    let beatFrequency = 10;
+    let volume = -10;
+    let selectedPreset = 'alpha';
+    
+    // Audio components
+    let leftOscillator = null;
+    let rightOscillator = null;
+    let leftPanner = null;
+    let rightPanner = null;
+    let volumeNode = null;
+    
+    // Brainwave presets
+    const presets = {
+      delta: { name: 'Delta (0.5-4 Hz)', base: 200, beat: 2, description: 'Deep sleep, healing' },
+      theta: { name: 'Theta (4-8 Hz)', base: 220, beat: 6, description: 'Meditation, creativity' },
+      alpha: { name: 'Alpha (8-13 Hz)', base: 200, beat: 10, description: 'Relaxation, calm focus' },
+      beta: { name: 'Beta (13-30 Hz)', base: 200, beat: 15, description: 'Concentration, alertness' },
+      gamma: { name: 'Gamma (30-100 Hz)', base: 300, beat: 40, description: 'Peak cognitive performance' }
+    };
+    
+    // DOM elements
+    const baseFrequencySlider = document.getElementById('base-frequency');
+    const beatFrequencySlider = document.getElementById('beat-frequency');
+    const volumeSlider = document.getElementById('volume-control');
+    const playButton = document.getElementById('play-button');
+    const baseFreqValue = document.getElementById('base-freq-value');
+    const beatFreqValue = document.getElementById('beat-freq-value');
+    const currentFreqDisplay = document.getElementById('current-freq-display');
+    const presetDescription = document.getElementById('preset-description');
+    const presetsContainer = document.getElementById('presets-container');
+    
+    // Initialize presets
+    function initializePresets() {
+      Object.keys(presets).forEach(key => {
+        const btn = document.createElement('button');
+        btn.innerText = presets[key].name;
+        btn.className = `p-2 rounded text-sm ${
+          selectedPreset === key 
+            ? 'bg-blue-500 text-white' 
+            : 'bg-gray-200 hover:bg-gray-300'
+        }`;
+        btn.onclick = () => applyPreset(key);
+        presetsContainer.appendChild(btn);
+      });
+      updatePresetDescription();
+    }
+    
+    // Apply preset
+    function applyPreset(presetKey) {
+      selectedPreset = presetKey;
+      baseFrequency = presets[presetKey].base;
+      beatFrequency = presets[presetKey].beat;
+      
+      // Update UI
+      baseFrequencySlider.value = baseFrequency;
+      beatFrequencySlider.value = beatFrequency;
+      baseFreqValue.innerText = baseFrequency;
+      beatFreqValue.innerText = beatFrequency;
+      updateFrequencyDisplay();
+      updatePresetButtons();
+      updatePresetDescription();
+      
+      // Update oscillators if playing
+      if (isPlaying) {
+        updateOscillators();
+      }
+    }
+    
+    function updatePresetButtons() {
+      Array.from(presetsContainer.children).forEach((btn, index) => {
+        const presetKey = Object.keys(presets)[index];
+        btn.className = `p-2 rounded text-sm ${
+          selectedPreset === presetKey 
+            ? 'bg-blue-500 text-white' 
+            : 'bg-gray-200 hover:bg-gray-300'
+        }`;
+      });
+    }
+    
+    function updatePresetDescription() {
+      presetDescription.innerText = presets[selectedPreset].description;
+    }
+    
+    // Update the frequency display
+    function updateFrequencyDisplay() {
+      currentFreqDisplay.innerText = `Currently generating: Left ear (${baseFrequency} Hz) + Right ear (${(baseFrequency + beatFrequency).toFixed(1)} Hz) = ${beatFrequency} Hz binaural beat`;
+    }
+    
+    // Initialize audio context
+    function initializeAudio() {
+      leftPanner = new Tone.Panner(-1).toDestination();
+      rightPanner = new Tone.Panner(1).toDestination();
+      volumeNode = new Tone.Volume(volume).connect(Tone.Destination);
+    }
+    
+    // Toggle play/stop
+    async function togglePlay() {
+      if (!isPlaying) {
+        // Start audio context
+        await Tone.start();
+        
+        if (!leftPanner || !rightPanner || !volumeNode) {
+          initializeAudio();
+        }
+        
+        // Create oscillators
+        leftOscillator = new Tone.Oscillator(baseFrequency, 'sine').connect(leftPanner).connect(volumeNode);
+        rightOscillator = new Tone.Oscillator(baseFrequency + beatFrequency, 'sine').connect(rightPanner).connect(volumeNode);
+        
+        // Start oscillators
+        leftOscillator.start();
+        rightOscillator.start();
+        
+        isPlaying = true;
+        playButton.innerText = 'Stop';
+        playButton.className = 'px-6 py-3 rounded-full font-semibold text-white bg-red-500 hover:bg-red-600';
+        baseFrequencySlider.disabled = true;
+      } else {
+        // Stop oscillators
+        if (leftOscillator) {
+          leftOscillator.stop();
+          leftOscillator.dispose();
+          leftOscillator = null;
+        }
+        if (rightOscillator) {
+          rightOscillator.stop();
+          rightOscillator.dispose();
+          rightOscillator = null;
+        }
+        
+        isPlaying = false;
+        playButton.innerText = 'Play';
+        playButton.className = 'px-6 py-3 rounded-full font-semibold text-white bg-green-500 hover:bg-green-600';
+        baseFrequencySlider.disabled = false;
+      }
+    }
+    
+    // Update oscillator frequencies
+    function updateOscillators() {
+      if (isPlaying && leftOscillator && rightOscillator) {
+        leftOscillator.frequency.value = baseFrequency;
+        rightOscillator.frequency.value = baseFrequency + beatFrequency;
+      }
+    }
+    
+    // Event listeners
+    baseFrequencySlider.addEventListener('input', (e) => {
+      baseFrequency = parseInt(e.target.value);
+      baseFreqValue.innerText = baseFrequency;
+      updateFrequencyDisplay();
+    });
+    
+    beatFrequencySlider.addEventListener('input', (e) => {
+      beatFrequency = parseFloat(e.target.value);
+      beatFreqValue.innerText = beatFrequency;
+      updateFrequencyDisplay();
+      updateOscillators();
+    });
+    
+    volumeSlider.addEventListener('input', (e) => {
+      volume = parseInt(e.target.value);
+      if (volumeNode) {
+        volumeNode.volume.value = volume;
+      }
+    });
+    
+    playButton.addEventListener('click', togglePlay);
+    
+    // Initialize
+    initializePresets();
+    applyPreset('alpha');
+  </script>
+</body>
+</html>
