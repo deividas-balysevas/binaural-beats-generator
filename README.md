@@ -8,12 +8,9 @@ A web-based application that generates binaural beats to help users explore diff
 - [Brain Wave States](#brain-wave-states)
 - [How to Use](#how-to-use)
 - [Installation](#installation)
-  - [Option 1: Standalone HTML File](#option-1-standalone-html-file)
-  - [Option 2: React Application](#option-2-react-application)
 - [Deployment](#deployment)
   - [Shared Hosting](#shared-hosting)
   - [GitHub Pages](#github-pages)
-- [Development Process](#development-process)
 - [Technical Details](#technical-details)
 - [Important Notes](#important-notes)
 
@@ -56,38 +53,20 @@ The application provides presets for the main types of brain waves:
 
 ## Installation
 
-### Option 1: Standalone HTML File
+The simplest way to use this application is to download the index.html file and open it in any web browser:
 
-The simplest way to use this application is to download the standalone.html file and open it in any web browser.
-
-1. Download the standalone.html file
+1. Download the index.html file
 2. Open it in your web browser
 3. No additional installation or dependencies required
 
-### Option 2: React Application
+For local testing with a server:
+```bash
+# Install a simple HTTP server if needed
+npm install -g serve
 
-For developers who want to modify or extend the application:
-
-1. Clone the repository
-   ```bash
-   git clone https://github.com/YOUR-USERNAME/binaural-beats-generator.git
-   cd binaural-beats-generator
-   ```
-
-2. Install dependencies
-   ```bash
-   npm install
-   ```
-
-3. Start the development server
-   ```bash
-   npm start
-   ```
-
-4. Build for production
-   ```bash
-   npm run build
-   ```
+# Serve the current directory
+serve
+```
 
 ## Deployment
 
@@ -95,61 +74,38 @@ For developers who want to modify or extend the application:
 
 To deploy on standard shared hosting:
 
-1. Use the standalone.html file for the simplest deployment
-2. Upload the file to your hosting provider via FTP
-3. Rename to index.html if you want it to be the default page
-4. Access through your domain name
+1. Upload the index.html file to your hosting provider via FTP
+2. Access through your domain name
 
-If using the React application version:
-
-1. Build the project using `npm run build`
-2. Upload the contents of the dist/ or build/ folder to your hosting provider
-3. If encountering 404 errors, create a .htaccess file with appropriate redirects:
-   ```
-   <IfModule mod_rewrite.c>
-     RewriteEngine On
-     RewriteBase /
-     RewriteRule ^index\.html$ - [L]
-     RewriteCond %{REQUEST_FILENAME} !-f
-     RewriteCond %{REQUEST_FILENAME} !-d
-     RewriteRule . /index.html [L]
-   </IfModule>
-   ```
+If encountering 404 errors on shared hosting, create a .htaccess file with appropriate redirects:
+```
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+```
 
 ### GitHub Pages
 
-1. Create a GitHub repository for your project
-2. Push your code to GitHub:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/your-username/binaural-beats-generator.git
-   git push -u origin main
-   ```
-3. Enable GitHub Pages in your repository settings
-4. Select the branch and folder to deploy from
-5. Your application will be available at https://your-username.github.io/binaural-beats-generator/
+1. Clone this repository
+2. Your application will be available at https://your-username.github.io/binaural-beats-generator/
 
-## Development Process
-
-This application was developed through the following stages:
-
-1. Initial research into brain wave patterns and binaural beats
-2. Design of the user interface with a focus on simplicity and ease of use
-3. Implementation of the audio generation using the Tone.js library
-4. Creation of presets based on established brain wave frequency ranges
-5. Development of both React component and standalone HTML versions
-6. Testing across different browsers and devices
-7. Deployment to web hosting
+To set up GitHub Pages for your own fork:
+1. Fork this repository
+2. Go to repository Settings → Pages
+3. Select the main branch as source
+4. Save to enable GitHub Pages
 
 ## Technical Details
 
 - **Audio Generation**: Uses the Tone.js library to create and manipulate sound waves
 - **Interface**: Built with HTML, CSS, and JavaScript
 - **Styling**: Uses Tailwind CSS for responsive design
-- **React Version**: Implements the application as a React component for better state management
-- **Standalone Version**: Self-contained HTML file with all dependencies included via CDN
+- **Self-contained**: All dependencies included via CDN for easy deployment
 
 ## Important Notes
 
